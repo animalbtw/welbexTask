@@ -4,15 +4,15 @@ import st from './Assets/Styles/App.module.css'
 import DialogWindow from "./Components/DialogWindow";
 import axios from "axios";
 import _ from 'lodash'
-import Paginator from "./Components/Paginator";
 import TableHeader from "./Components/TableHeader";
 import FilterConditions from "./Components/FilterConditions";
 
 const App = () => {
     const [items, setItems] = React.useState({});
+    const [sortedItems, setSortedItems] = React.useState();
 
-    const [paginatedPosts, setPaginatedPosts] = React.useState(items);
-
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [paginatedPosts, setPaginatedPosts] = React.useState(!sortedItems ? items : sortedItems);
     const [order, setOrder] = React.useState('up')
 
     const [filterType, setFilterType] = React.useState('');
@@ -43,21 +43,29 @@ const App = () => {
 
     const handleSort = (col) => {
         if (order === 'up') {
-            const sorted = paginatedPosts.sort((a, b) =>
+            const sorted = [...items].sort((a, b) =>
                 a[col] > b[col] ? 1 : -1
             )
-            setPaginatedPosts(sorted)
+            setItems(sorted)
+            pagination()
             setOrder('dwn')
         }
         if (order === 'dwn') {
-            const sorted = paginatedPosts.sort((a, b) =>
+            const sorted = [...items].sort((a, b) =>
                 a[col] < b[col] ? 1 : -1
             )
-            setPaginatedPosts(sorted)
+            setItems(sorted)
+            pagination()
             setOrder('up')
         }
     }
 
+    const pagination = (pageNum) => {
+        setCurrentPage(pageNum)
+        const startIndex = (pageNum - 1) * pageSize
+        const paginatedPost = _(items).slice(startIndex).take(pageSize).value()
+        setPaginatedPosts(paginatedPost)
+    }
 
     const pageSize = 5
     const pageCount = items ? Math.ceil(items.length / pageSize) : 0
@@ -107,22 +115,29 @@ const App = () => {
                                 }
                             </>
                         ) : (
-                                <FilterConditions
-                                    items={items}
-                                    filtrationReq={filtrationReq}
-                                    filterType={filterType}
-                                    filterOptions={filterOptions}
-                                />
+                            <FilterConditions
+                                items={items}
+                                filtrationReq={filtrationReq}
+                                filterType={filterType}
+                                filterOptions={filterOptions}
+                            />
                         )
                     }
                     <tr>
                         <td>
-                            <Paginator
-                                pages={pages}
-                                items={items}
-                                setPaginatedPosts={setPaginatedPosts}
-                                pageSize={pageSize}
-                            />
+                            <div className={st.wrapper_pag}>
+                                {
+                                    pages.map((page) => (
+                                        <div
+                                            key={page}
+                                            onClick={() => pagination(page)}
+                                            className={page === currentPage ? st.activePage : st.pageItem}
+                                        >
+                                            {page}
+                                        </div>
+                                    ))
+                                }
+                            </div>
                         </td>
                     </tr>
                     </tbody>
